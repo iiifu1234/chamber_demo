@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="100%" height="100%">
+  <!-- Clean Molex Typography Logo -->
+  <defs>
+    <style>
+      .molex-text { font-family: 'Arial Black', -apple-system, sans-serif; font-weight: 900; font-size: 58px; fill: #FFFFFF; letter-spacing: -2px; }
+      .molex-accent { fill: #E51937; }
+    </style>
+  </defs>
+  <!-- Background Badge (Optional soft contrast) -->
+  <rect x="0" y="8" width="310" height="64" rx="8" fill="#181d28" stroke="#272f42" stroke-width="1.5"/>
+  <!-- Red Molex Indicator Bar -->
+  <rect x="14" y="20" width="8" height="40" rx="3" class="molex-accent"/>
+  <!-- Text 'molex' -->
+  <text x="36" y="58" class="molex-text">molex</text>
+  <!-- Red Dot Accent -->
+  <circle cx="282" cy="52" r="6" class="molex-accent"/>
+</svg>

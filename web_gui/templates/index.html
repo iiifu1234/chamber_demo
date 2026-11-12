@@ -40,12 +40,36 @@
       padding-bottom: 12px;
       border-bottom: 1px solid var(--border-color);
     }
-    .header h1 {
-      font-size: 20px;
+    .header-left {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 16px;
+    }
+    .header-logo {
+      height: 42px;
+      max-height: 48px;
+      width: auto;
+      object-fit: contain;
+      cursor: pointer;
+    }
+    .header-titles h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin: 0;
+      line-height: 1.2;
       letter-spacing: 0.5px;
+    }
+    .header-subtitle {
+      font-size: 12px;
+      color: var(--text-sub);
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
     }
     .conn-badge {
       font-size: 13px;
@@ -267,12 +291,18 @@
 </head>
 <body>
 
-  <!-- Header -->
+  <!-- Header with Molex Brand Logo -->
   <div class="header">
-    <h1>⚡ Multi-Chamber Remote Monitoring Center</h1>
-    <div>
+    <div class="header-left">
+      <img id="molexLogo" src="/static/images/molex.png" onerror="if(!this.triedJpg){this.triedJpg=true;this.src='/static/images/molex.jpg';}else{this.src='/static/images/molex.svg';}" alt="Molex Logo" class="header-logo">
+      <div class="header-titles">
+        <h1>Multi-Chamber Remote Monitoring Center</h1>
+        <div class="header-subtitle">Reliability Test Laboratory</div>
+      </div>
+    </div>
+    <div class="header-right">
       <span id="connBadge" class="conn-badge">● WebSocket Connected</span>
-      <span id="clock" style="margin-left: 16px; color: var(--text-sub); font-family: monospace;">--:--:--</span>
+      <span id="clock" style="color: var(--text-sub); font-family: monospace;">--:--:--</span>
     </div>
   </div>
 
