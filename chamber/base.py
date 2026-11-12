@@ -3,9 +3,9 @@ Chamber Base Interface & Data Models
 """
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import IntEnum
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List, Any
 
 
 class ChamberState(IntEnum):
@@ -42,6 +42,17 @@ class ChamberTelemetry:
     uptime_sec: float
     uptime_str: str
     sim_speed: float
+
+    # Test Execution & Schedule Metadata
+    test_name: str = "Standard Idle"
+    test_operator: str = "Unassigned"
+    test_total_sec: float = 0.0
+    test_remaining_sec: float = 0.0
+    test_remaining_str: str = "--:--:--"
+    test_progress_pct: float = 0.0
+    est_completion_time: str = "N/A"
+    next_available_slot: str = "Available Now"
+    bookings: List[Dict[str, Any]] = field(default_factory=list)
 
 
 class BaseChamber(ABC):

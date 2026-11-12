@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Multi-Chamber Remote Monitoring Center</title>
+  <title>Multi-Chamber Remote Monitoring & Schedule Center</title>
   <!-- Apache ECharts -->
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
   <style>
@@ -31,7 +31,7 @@
       min-height: 100vh;
     }
 
-    /* Top Navigation Header */
+    /* Top Navigation Header with Molex Brand */
     .header {
       display: flex;
       justify-content: space-between;
@@ -154,7 +154,7 @@
     .tab-title {
       font-size: 15px;
       font-weight: 700;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -171,10 +171,23 @@
       gap: 12px;
       font-size: 12px;
       color: var(--text-sub);
+      margin-bottom: 4px;
     }
     .tab-mini-metrics span strong {
       color: var(--text-main);
       font-family: monospace;
+    }
+    .tab-mini-test {
+      font-size: 11px;
+      color: #94a3b8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tab-mini-rem {
+      font-size: 11px;
+      color: #fbbf24;
+      font-weight: 600;
     }
 
     /* 4 Metric Cards Grid */
@@ -229,6 +242,169 @@
       margin-bottom: 8px;
     }
 
+    /* Active Test Profile & Countdown Banner */
+    .test-profile-card {
+      background: linear-gradient(135deg, #182030 0%, #151b27 100%);
+      border: 1px solid #2d3b55;
+      border-left: 4px solid var(--primary);
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    }
+    .test-profile-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .test-title-box {
+      flex: 1;
+      min-width: 280px;
+    }
+    .test-badge {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+    .test-name-text {
+      font-size: 17px;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+    .test-meta-info {
+      font-size: 13px;
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .test-meta-info strong {
+      color: var(--text-main);
+    }
+    .countdown-box {
+      background: #0f141e;
+      border: 1px solid #273146;
+      border-radius: 8px;
+      padding: 12px 18px;
+      min-width: 280px;
+      text-align: right;
+    }
+    .countdown-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      letter-spacing: 0.8px;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .countdown-digits {
+      font-size: 26px;
+      font-weight: 800;
+      color: #fbbf24;
+      font-family: "Consolas", monospace;
+      letter-spacing: 1px;
+      text-shadow: 0 0 10px rgba(251, 191, 36, 0.25);
+    }
+    .progress-bar-wrap {
+      width: 100%;
+      height: 7px;
+      background: #1e2638;
+      border-radius: 4px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #10b981);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    .progress-text {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-top: 4px;
+    }
+
+    /* Booking & Schedule Section */
+    .schedule-section {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+    }
+    .schedule-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .schedule-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .schedule-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+    .next-slot-badge {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 15px;
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--success);
+      font-weight: 600;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    .schedule-table-wrap {
+      overflow-x: auto;
+    }
+    .schedule-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+    .schedule-table th {
+      padding: 9px 12px;
+      background: #121620;
+      color: var(--text-sub);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .schedule-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #1f2737;
+      color: var(--text-main);
+    }
+    .schedule-table tr:hover {
+      background: #1a2233;
+    }
+    .status-pill {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+      display: inline-block;
+    }
+    .status-confirmed { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+    .status-scheduled { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+
     /* Chart Container */
     .chart-box {
       background: var(--card-bg);
@@ -278,14 +454,63 @@
     button.btn-danger:hover { background: #b91c1c; }
     button.btn-success { background: #16a34a; border-color: #22c55e; }
     button.btn-success:hover { background: #15803d; }
-    input[type="number"], select {
+    input[type="number"], select, input[type="text"] {
       background: #0f131a;
       color: var(--text-main);
       border: 1px solid #3c4864;
       padding: 6px 10px;
       border-radius: 6px;
       font-size: 13px;
-      width: 80px;
+    }
+
+    /* Booking Modal Dialog */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-content {
+      background: #181f2c;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      width: 480px;
+      max-width: 90%;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #273347;
+    }
+    .modal-header h3 { font-size: 17px; color: #f8fafc; }
+    .form-group {
+      margin-bottom: 14px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-sub);
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
     }
   </style>
 </head>
@@ -306,7 +531,7 @@
     </div>
   </div>
 
-  <!-- Chamber Selector with Image Thumbnails -->
+  <!-- Chamber Selector with Image Thumbnails & Test Summary -->
   <div class="chamber-selector">
     <!-- Chamber 01 -->
     <div id="tab-chamber-1" class="chamber-tab active" onclick="selectChamber('chamber-1')">
@@ -319,10 +544,12 @@
           <span>Chamber 01 (High-Temp)</span>
         </div>
         <div class="tab-mini-metrics">
-          <span>Status: <strong id="mini-st-chamber-1">OFF</strong></span>
+          <span>Status: <strong id="mini-st-chamber-1">RUNNING</strong></span>
           <span>T: <strong id="mini-tp-chamber-1">--.-</strong>°C</span>
           <span>H: <strong id="mini-hp-chamber-1">--.-</strong>%</span>
         </div>
+        <div class="tab-mini-test" id="mini-test-chamber-1">Loading...</div>
+        <div class="tab-mini-rem">⏳ <span id="mini-rem-chamber-1">--:--:--</span> remaining</div>
       </div>
     </div>
 
@@ -337,10 +564,12 @@
           <span>Chamber 02 (Cryo-Shock)</span>
         </div>
         <div class="tab-mini-metrics">
-          <span>Status: <strong id="mini-st-chamber-2">OFF</strong></span>
+          <span>Status: <strong id="mini-st-chamber-2">RUNNING</strong></span>
           <span>T: <strong id="mini-tp-chamber-2">--.-</strong>°C</span>
           <span>H: <strong id="mini-hp-chamber-2">--.-</strong>%</span>
         </div>
+        <div class="tab-mini-test" id="mini-test-chamber-2">Loading...</div>
+        <div class="tab-mini-rem">⏳ <span id="mini-rem-chamber-2">--:--:--</span> remaining</div>
       </div>
     </div>
 
@@ -355,10 +584,12 @@
           <span>Chamber 03 (Standard)</span>
         </div>
         <div class="tab-mini-metrics">
-          <span>Status: <strong id="mini-st-chamber-3">OFF</strong></span>
+          <span>Status: <strong id="mini-st-chamber-3">RUNNING</strong></span>
           <span>T: <strong id="mini-tp-chamber-3">--.-</strong>°C</span>
           <span>H: <strong id="mini-hp-chamber-3">--.-</strong>%</span>
         </div>
+        <div class="tab-mini-test" id="mini-test-chamber-3">Loading...</div>
+        <div class="tab-mini-rem">⏳ <span id="mini-rem-chamber-3">--:--:--</span> remaining</div>
       </div>
     </div>
   </div>
@@ -409,6 +640,58 @@
     </div>
   </div>
 
+  <!-- Active Test Profile & Remaining Countdown Banner -->
+  <div class="test-profile-card">
+    <div class="test-profile-header">
+      <div class="test-title-box">
+        <span class="test-badge">ACTIVE TEST PROFILE (當前執行項目)</span>
+        <h2 id="valTestName" class="test-name-text">Molex Reliability Test</h2>
+        <div class="test-meta-info">
+          <span>Responsible Engineer: <strong id="valTestOperator">Patrick Chen</strong></span>
+          <span>•</span>
+          <span>Est. Completion: <strong id="valEstEnd">--:--</strong></span>
+        </div>
+      </div>
+      <div class="countdown-box">
+        <span class="countdown-label">TIME REMAINING (剩餘時間)</span>
+        <div id="valRemainingTime" class="countdown-digits">--h --m --s</div>
+        <div class="progress-bar-wrap">
+          <div id="valProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+        </div>
+        <div class="progress-text">Progress: <span id="valProgressPct">0%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reservation & Booking Schedule Section -->
+  <div class="schedule-section">
+    <div class="schedule-header">
+      <div class="schedule-title-wrap">
+        <span style="font-size: 20px;">📅</span>
+        <h3 class="schedule-title">Reservation & Booking Schedule (機台預約時程)</h3>
+        <span id="valNextSlot" class="next-slot-badge">Available Now</span>
+      </div>
+      <button class="btn-primary" onclick="openBookingModal()">+ Book This Chamber (預約此機台)</button>
+    </div>
+    
+    <div class="schedule-table-wrap">
+      <table class="schedule-table">
+        <thead>
+          <tr>
+            <th>Project / Test Name (專案測試名稱)</th>
+            <th>Engineer (預約人員)</th>
+            <th>Scheduled Start (預約時間)</th>
+            <th>Duration (時長)</th>
+            <th>Status (狀態)</th>
+          </tr>
+        </thead>
+        <tbody id="scheduleTableBody">
+          <!-- Populated dynamically via JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- Real-Time Trend Charts -->
   <div id="echartContainer" class="chart-box"></div>
 
@@ -421,10 +704,10 @@
 
     <div class="ctrl-group">
       <span class="ctrl-label">Target Temp:</span>
-      <input type="number" id="inTemp" value="60" step="1" onchange="sendSV()">
+      <input type="number" id="inTemp" value="60" step="1" onchange="sendSV()" style="width: 70px;">
       <span class="ctrl-label">°C</span>
       <span class="ctrl-label" style="margin-left: 10px;">Target Humi:</span>
-      <input type="number" id="inHumi" value="75" step="1" onchange="sendSV()">
+      <input type="number" id="inHumi" value="75" step="1" onchange="sendSV()" style="width: 70px;">
       <span class="ctrl-label">%RH</span>
     </div>
 
@@ -445,14 +728,49 @@
     </div>
   </div>
 
+  <!-- Booking Modal Dialog -->
+  <div id="bookingModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>📅 Book Test Chamber Reservation</h3>
+        <button onclick="closeBookingModal()" style="padding: 2px 8px;">✕</button>
+      </div>
+      <div class="form-group">
+        <label>Project / Test Profile Name (專案或測試名稱):</label>
+        <input type="text" id="bookProject" placeholder="e.g. Molex Next-Gen Connector Life Test">
+      </div>
+      <div class="form-group">
+        <label>Engineer Name (預約工程師姓名):</label>
+        <input type="text" id="bookEngineer" placeholder="e.g. Patrick Chen">
+      </div>
+      <div class="form-group">
+        <label>Reserved Start Time (預約開始時間):</label>
+        <input type="text" id="bookStartTime" placeholder="e.g. Today 21:00 or Tomorrow 09:00">
+      </div>
+      <div class="form-group">
+        <label>Estimated Duration (預計時長):</label>
+        <select id="bookDuration">
+          <option value="4h">4 Hours</option>
+          <option value="8h" selected>8 Hours</option>
+          <option value="12h">12 Hours</option>
+          <option value="24h">24 Hours (Full Day)</option>
+          <option value="48h">48 Hours</option>
+          <option value="96h">96 Hours (Standard 4-Day)</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button onclick="closeBookingModal()">Cancel (取消)</button>
+        <button class="btn-primary" onclick="submitBooking()">Confirm Booking (確認預約)</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // Initialize ECharts
     const chart = echarts.init(document.getElementById('echartContainer'), 'dark');
     const MAX_PTS = 150;
 
     let currentChamberId = 'chamber-1';
 
-    // Separate historical data buffers for 3 chambers
     const multiHistory = {
       'chamber-1': { times: [], tempPV: [], tempSV: [], humiPV: [], humiSV: [], states: [] },
       'chamber-2': { times: [], tempPV: [], tempSV: [], humiPV: [], humiSV: [], states: [] },
@@ -595,6 +913,7 @@
         for (const [cid, d] of Object.entries(msg.chambers)) {
           latestData[cid] = d;
 
+          // Update mini tabs
           const dot = document.getElementById(`dot-${cid}`);
           if (dot) dot.style.backgroundColor = d.state_color;
           const stMini = document.getElementById(`mini-st-${cid}`);
@@ -604,6 +923,13 @@
           const hpMini = document.getElementById(`mini-hp-${cid}`);
           if (hpMini) hpMini.textContent = d.humi_pv.toFixed(1);
 
+          // Update mini test info & remaining time
+          const tMini = document.getElementById(`mini-test-${cid}`);
+          if (tMini) tMini.textContent = d.test_name;
+          const rMini = document.getElementById(`mini-rem-${cid}`);
+          if (rMini) rMini.textContent = d.test_remaining_str;
+
+          // Append telemetry to historical buffer
           const h = multiHistory[cid];
           h.times.push(d.time);
           h.tempPV.push(d.temp_pv);
@@ -684,6 +1010,40 @@
 
       document.getElementById('tagTemp').textContent = d.heater ? 'Heating' : (d.cooler ? 'Cooling' : 'Maintaining');
       document.getElementById('tagHumi').textContent = d.humidifier ? 'Humidifying' : 'Stable';
+
+      // Update Active Test & Countdown Info
+      document.getElementById('valTestName').textContent = d.test_name;
+      document.getElementById('valTestOperator').textContent = d.test_operator;
+      document.getElementById('valEstEnd').textContent = d.est_completion_time;
+      document.getElementById('valRemainingTime').textContent = d.test_remaining_str;
+      document.getElementById('valProgressBar').style.width = d.test_progress_pct + '%';
+      document.getElementById('valProgressPct').textContent = d.test_progress_pct + '%';
+
+      // Update Next Available Slot & Bookings Table
+      document.getElementById('valNextSlot').textContent = d.next_available_slot;
+      renderScheduleTable(d.bookings);
+    }
+
+    function renderScheduleTable(bookings) {
+      const tbody = document.getElementById('scheduleTableBody');
+      if (!bookings || bookings.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#64748b;padding:16px;">No upcoming reservations. Chamber is available for booking!</td></tr>';
+        return;
+      }
+      let html = '';
+      bookings.forEach(b => {
+        const statusClass = b.status === 'Confirmed' ? 'status-confirmed' : 'status-scheduled';
+        html += `
+          <tr>
+            <td style="font-weight:600;">${b.project}</td>
+            <td>${b.engineer}</td>
+            <td style="color:#fbbf24;">${b.start_time}</td>
+            <td>${b.duration}</td>
+            <td><span class="status-pill ${statusClass}">${b.status}</span></td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
     }
 
     connectWS();
@@ -714,6 +1074,34 @@
 
     function sendSpeed(spd) {
       ws.send(JSON.stringify({ action: 'set_speed', chamber_id: currentChamberId, value: parseFloat(spd) }));
+    }
+
+    // Modal Booking logic
+    function openBookingModal() {
+      document.getElementById('bookingModal').classList.add('show');
+    }
+
+    function closeBookingModal() {
+      document.getElementById('bookingModal').classList.remove('show');
+    }
+
+    function submitBooking() {
+      const project = document.getElementById('bookProject').value.trim() || 'Molex Connector Test';
+      const engineer = document.getElementById('bookEngineer').value.trim() || 'Patrick Chen';
+      const startTime = document.getElementById('bookStartTime').value.trim() || 'Tomorrow 09:00';
+      const duration = document.getElementById('bookDuration').value;
+
+      ws.send(JSON.stringify({
+        action: 'book_slot',
+        chamber_id: currentChamberId,
+        project: project,
+        engineer: engineer,
+        start_time: startTime,
+        duration: duration
+      }));
+
+      closeBookingModal();
+      document.getElementById('bookProject').value = '';
     }
 
     function downloadCSV() {

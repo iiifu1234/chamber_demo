@@ -1,6 +1,6 @@
 """
 Multi-Chamber Web GUI Server (FastAPI + WebSocket)
-Serves real-time bilingual/English dashboard and static image assets.
+Provides real-time telemetry, test status, remaining time countdown, and booking schedule.
 """
 
 import os
@@ -16,7 +16,6 @@ from commands.controller import ChamberController
 
 app = FastAPI(title="Multi-Chamber Remote Web Monitor")
 
-# Mount Static directory for Chamber images and custom assets
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(CURRENT_DIR, "static")
 TEMPLATE_PATH = os.path.join(CURRENT_DIR, "templates", "index.html")
@@ -60,6 +59,21 @@ async def websocket_endpoint(websocket: WebSocket):
                 controller.set_target(temp=temp, humi=humi, chamber_id=cid)
             elif action == "set_speed":
                 controller.set_speed(float(cmd.get("value", 1.0)), chamber_id=cid)
+            elif action == "book_slot":
+                controller.add_booking(
+                    chamber_id=cid,
+                    project=cmd.get("project", "Reliability Test"),
+                    engineer=cmd.get("engineer", "Engineer"),
+                    start_time=cmd.get("start_time", "Immediate"),
+                    duration=cmd.get("duration", "4h")
+                )
+            elif action == "update_test":
+                controller.set_test_profile(
+                    chamber_id=cid,
+                    name=cmd.get("name", "Custom Test"),
+                    operator=cmd.get("operator", "Staff"),
+                    total_hours=float(cmd.get("total_hours", 8.0))
+                )
 
     except WebSocketDisconnect:
         active_websockets.discard(websocket)
@@ -68,7 +82,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 async def broadcast_loop():
-    """Periodic telemetry broadcast to all connected web clients"""
+    """Periodic telemetry & schedule broadcast to all web clients"""
     while True:
         await asyncio.sleep(0.15)
         if active_websockets:
@@ -91,6 +105,14 @@ async def broadcast_loop():
                     "door_open": t.door_open,
                     "uptime": t.uptime_str,
                     "sim_speed": t.sim_speed,
+                    # Test Execution & Booking Schedule
+                    "test_name": t.test_name,
+                    "test_operator": t.test_operator,
+                    "test_remaining_str": t.test_remaining_str,
+                    "test_progress_pct": t.test_progress_pct,
+                    "est_completion_time": t.est_completion_time,
+                    "next_available_slot": t.next_available_slot,
+                    "bookings": t.bookings
                 }
 
             payload = json.dumps({
