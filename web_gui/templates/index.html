@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Chamber Remote Monitoring Center</title>
+  <!-- Apache ECharts -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0f131a;
+      --card-bg: #181d28;
+      --card-hover: #1f2635;
+      --border-color: #272f42;
+      --border-active: #3b82f6;
+      --text-main: #e2e8f0;
+      --text-sub: #8d9bb0;
+      --temp-color: #ff9800;
+      --humi-color: #00bcd4;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --primary: #3b82f6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 16px 24px;
+      min-height: 100vh;
+    }
+
+    /* Top Navigation Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .header h1 {
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: 0.5px;
+    }
+    .conn-badge {
+      font-size: 13px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--success);
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .conn-badge.offline {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+    }
+
+    /* Chamber Selector Tabs with Images */
+    .chamber-selector {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .chamber-tab {
+      background: var(--card-bg);
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      user-select: none;
+    }
+    .chamber-tab:hover {
+      background: var(--card-hover);
+      border-color: #475569;
+      transform: translateY(-2px);
+    }
+    .chamber-tab.active {
+      background: #19243a;
+      border-color: var(--border-active);
+      box-shadow: 0 0 16px rgba(59, 130, 246, 0.25);
+    }
+    .chamber-tab.active::after {
+      content: "SELECTED";
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      font-size: 10px;
+      letter-spacing: 1px;
+      background: rgba(59, 130, 246, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--primary);
+      font-weight: bold;
+    }
+    .chamber-img-wrap {
+      width: 64px;
+      height: 64px;
+      min-width: 64px;
+      background: #121620;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .chamber-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .chamber-tab-info {
+      flex: 1;
+      overflow: hidden;
+    }
+    .tab-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tab-status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #6c757d;
+      display: inline-block;
+    }
+    .tab-mini-metrics {
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+    .tab-mini-metrics span strong {
+      color: var(--text-main);
+      font-family: monospace;
+    }
+
+    /* 4 Metric Cards Grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 14px 18px;
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .card-title {
+      font-size: 11px;
+      color: var(--text-sub);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #232b3c;
+    }
+    .card-val {
+      font-size: 34px;
+      font-weight: 800;
+      font-family: "Consolas", monospace;
+      margin-bottom: 6px;
+    }
+    .card-sub {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+    .status-badge-lg {
+      font-size: 18px;
+      font-weight: 700;
+      padding: 8px 12px;
+      border-radius: 6px;
+      text-align: center;
+      color: white;
+      margin-bottom: 8px;
+    }
+
+    /* Chart Container */
+    .chart-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+      height: 480px;
+    }
+
+    /* Remote Control Panel */
+    .control-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: center;
+    }
+    .ctrl-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ctrl-label {
+      font-size: 13px;
+      color: var(--text-sub);
+      font-weight: 600;
+    }
+    button {
+      background: #273043;
+      color: var(--text-main);
+      border: 1px solid #3c4864;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    button:hover { background: #35425c; border-color: #55678d; }
+    button.btn-primary { background: #2563eb; border-color: #3b82f6; }
+    button.btn-primary:hover { background: #1d4ed8; }
+    button.btn-danger { background: #dc2626; border-color: #ef4444; }
+    button.btn-danger:hover { background: #b91c1c; }
+    button.btn-success { background: #16a34a; border-color: #22c55e; }
+    button.btn-success:hover { background: #15803d; }
+    input[type="number"], select {
+      background: #0f131a;
+      color: var(--text-main);
+      border: 1px solid #3c4864;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      width: 80px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>⚡ Multi-Chamber Remote Monitoring Center</h1>
+    <div>
+      <span id="connBadge" class="conn-badge">● WebSocket Connected</span>
+      <span id="clock" style="margin-left: 16px; color: var(--text-sub); font-family: monospace;">--:--:--</span>
+    </div>
+  </div>
+
+  <!-- Chamber Selector with Image Thumbnails -->
+  <div class="chamber-selector">
+    <!-- Chamber 01 -->
+    <div id="tab-chamber-1" class="chamber-tab active" onclick="selectChamber('chamber-1')">
+      <div class="chamber-img-wrap">
+        <img id="img-chamber-1" src="/static/images/chamber1.png" onerror="this.src='/static/images/chabmer1.PNG'" alt="Chamber 1">
+      </div>
+      <div class="chamber-tab-info">
+        <div class="tab-title">
+          <span id="dot-chamber-1" class="tab-status-dot"></span>
+          <span>Chamber 01 (High-Temp)</span>
+        </div>
+        <div class="tab-mini-metrics">
+          <span>Status: <strong id="mini-st-chamber-1">OFF</strong></span>
+          <span>T: <strong id="mini-tp-chamber-1">--.-</strong>°C</span>
+          <span>H: <strong id="mini-hp-chamber-1">--.-</strong>%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chamber 02 -->
+    <div id="tab-chamber-2" class="chamber-tab" onclick="selectChamber('chamber-2')">
+      <div class="chamber-img-wrap">
+        <img id="img-chamber-2" src="/static/images/chamber2.png" onerror="this.src='/static/images/chabmer2.PNG'" alt="Chamber 2">
+      </div>
+      <div class="chamber-tab-info">
+        <div class="tab-title">
+          <span id="dot-chamber-2" class="tab-status-dot"></span>
+          <span>Chamber 02 (Cryo-Shock)</span>
+        </div>
+        <div class="tab-mini-metrics">
+          <span>Status: <strong id="mini-st-chamber-2">OFF</strong></span>
+          <span>T: <strong id="mini-tp-chamber-2">--.-</strong>°C</span>
+          <span>H: <strong id="mini-hp-chamber-2">--.-</strong>%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chamber 03 -->
+    <div id="tab-chamber-3" class="chamber-tab" onclick="selectChamber('chamber-3')">
+      <div class="chamber-img-wrap">
+        <img id="img-chamber-3" src="/static/images/chamber3.png" onerror="this.src='/static/images/chabmer3.PNG'" alt="Chamber 3">
+      </div>
+      <div class="chamber-tab-info">
+        <div class="tab-title">
+          <span id="dot-chamber-3" class="tab-status-dot"></span>
+          <span>Chamber 03 (Standard)</span>
+        </div>
+        <div class="tab-mini-metrics">
+          <span>Status: <strong id="mini-st-chamber-3">OFF</strong></span>
+          <span>T: <strong id="mini-tp-chamber-3">--.-</strong>°C</span>
+          <span>H: <strong id="mini-hp-chamber-3">--.-</strong>%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real-Time Metrics Cards for Active Chamber -->
+  <div class="cards-grid">
+    <!-- Temperature Card -->
+    <div class="card">
+      <div class="card-top">
+        <span class="card-title">Temperature (PV / SV)</span>
+        <span id="tagTemp" class="badge">Standby</span>
+      </div>
+      <div class="card-val" style="color: var(--temp-color);"><span id="valTemp">25.0</span> <span style="font-size:16px;">°C</span></div>
+      <div class="card-sub">Target Setpoint (SV): <span id="svTemp">60.0</span> °C</div>
+    </div>
+
+    <!-- Humidity Card -->
+    <div class="card">
+      <div class="card-top">
+        <span class="card-title">Humidity (PV / SV)</span>
+        <span id="tagHumi" class="badge">Standby</span>
+      </div>
+      <div class="card-val" style="color: var(--humi-color);"><span id="valHumi">55.0</span> <span style="font-size:16px;">%RH</span></div>
+      <div class="card-sub">Target Setpoint (SV): <span id="svHumi">75.0</span> %RH</div>
+    </div>
+
+    <!-- Machine Operation Status -->
+    <div class="card">
+      <div class="card-top">
+        <span class="card-title">Machine Status</span>
+        <span id="lblActiveChamber" class="badge">CHAMBER 01</span>
+      </div>
+      <div id="stateBadge" class="status-badge-lg" style="background-color: #6c757d;">OFF</div>
+      <div class="card-sub">Cumulative Runtime: <span id="valUptime">00:00:00</span></div>
+    </div>
+
+    <!-- Actuators & Safety Sensors -->
+    <div class="card">
+      <div class="card-top">
+        <span class="card-title">Actuators & Door</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; margin-top: 4px;">
+        <div id="indHeater">Heater: OFF</div>
+        <div id="indCooler">Cooler: OFF</div>
+        <div id="indHumid">Humidifier: OFF</div>
+        <div id="indDoor" style="color: #22c55e;">Door: CLOSED</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real-Time Trend Charts -->
+  <div id="echartContainer" class="chart-box"></div>
+
+  <!-- Remote Operations Panel -->
+  <div class="control-panel">
+    <div class="ctrl-group">
+      <button id="btnPower" onclick="togglePower()">Power ON</button>
+      <button id="btnRun" onclick="toggleRun()">Start Run</button>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label">Target Temp:</span>
+      <input type="number" id="inTemp" value="60" step="1" onchange="sendSV()">
+      <span class="ctrl-label">°C</span>
+      <span class="ctrl-label" style="margin-left: 10px;">Target Humi:</span>
+      <input type="number" id="inHumi" value="75" step="1" onchange="sendSV()">
+      <span class="ctrl-label">%RH</span>
+    </div>
+
+    <div class="ctrl-group">
+      <button id="btnDoor" onclick="toggleDoor()">Simulate Door</button>
+      <button id="btnAlarm" class="btn-danger" onclick="toggleAlarm()">Trigger Alarm</button>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label">Simulation Speed:</span>
+      <select id="selSpeed" onchange="sendSpeed(this.value)">
+        <option value="1">1.0x (Real-time)</option>
+        <option value="2">2.0x (Fast)</option>
+        <option value="5">5.0x (High)</option>
+        <option value="10">10.0x (Max)</option>
+      </select>
+      <button onclick="downloadCSV()">Export CSV Log</button>
+    </div>
+  </div>
+
+  <script>
+    // Initialize ECharts
+    const chart = echarts.init(document.getElementById('echartContainer'), 'dark');
+    const MAX_PTS = 150;
+
+    let currentChamberId = 'chamber-1';
+
+    // Separate historical data buffers for 3 chambers
+    const multiHistory = {
+      'chamber-1': { times: [], tempPV: [], tempSV: [], humiPV: [], humiSV: [], states: [] },
+      'chamber-2': { times: [], tempPV: [], tempSV: [], humiPV: [], humiSV: [], states: [] },
+      'chamber-3': { times: [], tempPV: [], tempSV: [], humiPV: [], humiSV: [], states: [] }
+    };
+
+    const latestData = {
+      'chamber-1': null,
+      'chamber-2': null,
+      'chamber-3': null
+    };
+
+    const option = {
+      backgroundColor: 'transparent',
+      tooltip: { trigger: 'axis' },
+      legend: {
+        data: ['Temperature PV', 'Temperature SV', 'Humidity PV', 'Humidity SV', 'Operating State'],
+        top: 0
+      },
+      grid: [
+        { left: '4%', right: '3%', top: '10%', height: '56%' },
+        { left: '4%', right: '3%', top: '74%', height: '20%' }
+      ],
+      xAxis: [
+        { type: 'category', data: [], gridIndex: 0, show: false },
+        { type: 'category', data: [], gridIndex: 1, boundaryGap: false }
+      ],
+      yAxis: [
+        { type: 'value', name: 'Temp & Humidity (°C / %RH)', gridIndex: 0, min: -30, max: 130 },
+        { 
+          type: 'value', 
+          name: 'State', 
+          gridIndex: 1, 
+          min: 0, 
+          max: 3, 
+          interval: 1,
+          axisLabel: {
+            formatter: (v) => ['OFF', 'STANDBY', 'RUN', 'ALARM'][v] || v
+          }
+        }
+      ],
+      series: [
+        {
+          name: 'Temperature PV',
+          type: 'line',
+          xAxisIndex: 0,
+          yAxisIndex: 0,
+          smooth: true,
+          itemStyle: { color: '#ff9800' },
+          data: []
+        },
+        {
+          name: 'Temperature SV',
+          type: 'line',
+          xAxisIndex: 0,
+          yAxisIndex: 0,
+          lineStyle: { type: 'dashed', color: '#ffb74d' },
+          data: []
+        },
+        {
+          name: 'Humidity PV',
+          type: 'line',
+          xAxisIndex: 0,
+          yAxisIndex: 0,
+          smooth: true,
+          itemStyle: { color: '#00bcd4' },
+          data: []
+        },
+        {
+          name: 'Humidity SV',
+          type: 'line',
+          xAxisIndex: 0,
+          yAxisIndex: 0,
+          lineStyle: { type: 'dashed', color: '#80deea' },
+          data: []
+        },
+        {
+          name: 'Operating State',
+          type: 'line',
+          step: 'middle',
+          xAxisIndex: 1,
+          yAxisIndex: 1,
+          itemStyle: { color: '#22c55e' },
+          areaStyle: { color: 'rgba(34, 197, 94, 0.2)' },
+          data: []
+        }
+      ]
+    };
+    chart.setOption(option);
+    window.addEventListener('resize', () => chart.resize());
+
+    function selectChamber(cid) {
+      currentChamberId = cid;
+
+      ['chamber-1', 'chamber-2', 'chamber-3'].forEach(id => {
+        document.getElementById(`tab-${id}`).classList.toggle('active', id === cid);
+      });
+
+      const nameMap = { 'chamber-1': 'CHAMBER 01', 'chamber-2': 'CHAMBER 02', 'chamber-3': 'CHAMBER 03' };
+      document.getElementById('lblActiveChamber').textContent = nameMap[cid];
+
+      if (latestData[cid]) {
+        updateActiveUI(latestData[cid]);
+      }
+      refreshChart();
+    }
+
+    function refreshChart() {
+      const h = multiHistory[currentChamberId];
+      chart.setOption({
+        xAxis: [
+          { data: h.times },
+          { data: h.times }
+        ],
+        series: [
+          { data: h.tempPV },
+          { data: h.tempSV },
+          { data: h.humiPV },
+          { data: h.humiSV },
+          { data: h.states }
+        ]
+      });
+    }
+
+    let ws;
+    function connectWS() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+      ws.onopen = () => {
+        const badge = document.getElementById('connBadge');
+        badge.textContent = '● WebSocket Connected';
+        badge.classList.remove('offline');
+      };
+
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        if (msg.type !== 'telemetry_multi') return;
+
+        for (const [cid, d] of Object.entries(msg.chambers)) {
+          latestData[cid] = d;
+
+          const dot = document.getElementById(`dot-${cid}`);
+          if (dot) dot.style.backgroundColor = d.state_color;
+          const stMini = document.getElementById(`mini-st-${cid}`);
+          if (stMini) stMini.textContent = d.state_text;
+          const tpMini = document.getElementById(`mini-tp-${cid}`);
+          if (tpMini) tpMini.textContent = d.temp_pv.toFixed(1);
+          const hpMini = document.getElementById(`mini-hp-${cid}`);
+          if (hpMini) hpMini.textContent = d.humi_pv.toFixed(1);
+
+          const h = multiHistory[cid];
+          h.times.push(d.time);
+          h.tempPV.push(d.temp_pv);
+          h.tempSV.push(d.temp_sv);
+          h.humiPV.push(d.humi_pv);
+          h.humiSV.push(d.humi_sv);
+          h.states.push(d.state);
+
+          if (h.times.length > MAX_PTS) {
+            h.times.shift();
+            h.tempPV.shift();
+            h.tempSV.shift();
+            h.humiPV.shift();
+            h.humiSV.shift();
+            h.states.shift();
+          }
+        }
+
+        const cur = msg.chambers[currentChamberId];
+        if (cur) {
+          updateActiveUI(cur);
+          refreshChart();
+        }
+      };
+
+      ws.onclose = () => {
+        const badge = document.getElementById('connBadge');
+        badge.textContent = '❌ Offline, Reconnecting...';
+        badge.classList.add('offline');
+        setTimeout(connectWS, 2000);
+      };
+    }
+
+    function updateActiveUI(d) {
+      document.getElementById('clock').textContent = d.time;
+      document.getElementById('valTemp').textContent = d.temp_pv.toFixed(1);
+      document.getElementById('svTemp').textContent = d.temp_sv.toFixed(1);
+      document.getElementById('valHumi').textContent = d.humi_pv.toFixed(1);
+      document.getElementById('svHumi').textContent = d.humi_sv.toFixed(1);
+      document.getElementById('valUptime').textContent = d.uptime;
+
+      const stateBadge = document.getElementById('stateBadge');
+      stateBadge.textContent = d.state_text;
+      stateBadge.style.backgroundColor = d.state_color;
+
+      const isPowerOn = (d.state !== 0);
+      const isRunning = (d.state === 2);
+      const isDoorOpen = d.door_open;
+      const isAlarm = (d.state === 3);
+
+      const btnPower = document.getElementById('btnPower');
+      btnPower.textContent = isPowerOn ? 'Power OFF' : 'Power ON';
+      btnPower.className = isPowerOn ? 'btn-danger' : '';
+
+      const btnRun = document.getElementById('btnRun');
+      btnRun.textContent = isRunning ? 'Pause Run' : 'Start Run';
+      btnRun.className = isRunning ? 'btn-success' : '';
+
+      const btnDoor = document.getElementById('btnDoor');
+      btnDoor.textContent = isDoorOpen ? 'Close Door' : 'Open Door';
+      btnDoor.style.backgroundColor = isDoorOpen ? '#d97706' : '';
+
+      const btnAlarm = document.getElementById('btnAlarm');
+      btnAlarm.textContent = isAlarm ? 'Reset Alarm' : 'Trigger Alarm';
+
+      document.getElementById('indHeater').textContent = `Heater: ${d.heater ? 'ON 🔥' : 'OFF'}`;
+      document.getElementById('indHeater').style.color = d.heater ? '#ff5722' : '#8d9bb0';
+
+      document.getElementById('indCooler').textContent = `Cooler: ${d.cooler ? 'ON ❄️' : 'OFF'}`;
+      document.getElementById('indCooler').style.color = d.cooler ? '#03a9f4' : '#8d9bb0';
+
+      document.getElementById('indHumid').textContent = `Humidifier: ${d.humidifier ? 'ON 💧' : 'OFF'}`;
+      document.getElementById('indHumid').style.color = d.humidifier ? '#00bcd4' : '#8d9bb0';
+
+      const indDoor = document.getElementById('indDoor');
+      indDoor.textContent = `Door: ${d.door_open ? 'OPEN ⚠️' : 'CLOSED'}`;
+      indDoor.style.color = d.door_open ? '#ef4444' : '#22c55e';
+
+      document.getElementById('tagTemp').textContent = d.heater ? 'Heating' : (d.cooler ? 'Cooling' : 'Maintaining');
+      document.getElementById('tagHumi').textContent = d.humidifier ? 'Humidifying' : 'Stable';
+    }
+
+    connectWS();
+
+    function togglePower() {
+      const cur = latestData[currentChamberId];
+      const isPowerOn = cur && (cur.state !== 0);
+      ws.send(JSON.stringify({ action: 'power_toggle', chamber_id: currentChamberId, value: !isPowerOn }));
+    }
+
+    function toggleRun() {
+      ws.send(JSON.stringify({ action: 'run_toggle', chamber_id: currentChamberId }));
+    }
+
+    function toggleDoor() {
+      ws.send(JSON.stringify({ action: 'door_toggle', chamber_id: currentChamberId }));
+    }
+
+    function toggleAlarm() {
+      ws.send(JSON.stringify({ action: 'alarm_toggle', chamber_id: currentChamberId }));
+    }
+
+    function sendSV() {
+      const t = parseFloat(document.getElementById('inTemp').value);
+      const h = parseFloat(document.getElementById('inHumi').value);
+      ws.send(JSON.stringify({ action: 'set_sv', chamber_id: currentChamberId, temp: t, humi: h }));
+    }
+
+    function sendSpeed(spd) {
+      ws.send(JSON.stringify({ action: 'set_speed', chamber_id: currentChamberId, value: parseFloat(spd) }));
+    }
+
+    function downloadCSV() {
+      const h = multiHistory[currentChamberId];
+      if (!h || h.times.length === 0) return alert('No history data for current chamber');
+      let csv = 'Timestamp,Temperature_PV(C),Temperature_SV(C),Humidity_PV(%RH),Humidity_SV(%RH),State_Code\\n';
+      for (let i = 0; i < h.times.length; i++) {
+        csv += `${h.times[i]},${h.tempPV[i]},${h.tempSV[i]},${h.humiPV[i]},${h.humiSV[i]},${h.states[i]}\\n`;
+      }
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentChamberId}_telemetry_${new Date().toISOString().slice(0,19).replace(/[:T]/g, '_')}.csv`;
+      a.click();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Large binaries & Temporary tools
+cloudflared.exe
+*.exe
+
+# Logs & exports
+*.log
+*.csv
+
+# OS generated files
+Thumbs.db
+.DS_Store
+.idea/
+.vscode/
