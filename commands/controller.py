@@ -127,8 +127,61 @@ class ChamberController:
         if hasattr(ch, "set_test_profile"):
             ch.set_test_profile(name=name, operator=operator, total_hours=total_hours)
 
+    def execute_action(self, chamber_id: str, cmd: Dict[str, Any]) -> Dict[str, Any]:
+        """Unified command execution from API or WebSocket payload"""
+        action = cmd.get("action")
+        if action == "power_toggle":
+            self.power(bool(cmd.get("value", True)), chamber_id=chamber_id)
+        elif action == "run_toggle":
+            if "value" in cmd and cmd["value"] is not None:
+                self.run(bool(cmd["value"]), chamber_id=chamber_id)
+            else:
+                t = self.get_telemetry(chamber_id=chamber_id)
+                self.run(t.state != ChamberState.RUNNING, chamber_id=chamber_id)
+        elif action == "door_toggle":
+            self.toggle_door(chamber_id=chamber_id)
+        elif action == "alarm_toggle":
+            if "value" in cmd and cmd["value"] is not None:
+                self.alarm(bool(cmd["value"]), chamber_id=chamber_id)
+            else:
+                t = self.get_telemetry(chamber_id=chamber_id)
+                self.alarm(t.state != ChamberState.ALARM, chamber_id=chamber_id)
+        elif action == "set_sv":
+            temp = float(cmd["temp"]) if cmd.get("temp") is not None else None
+            humi = float(cmd["humi"]) if cmd.get("humi") is not None else None
+            self.set_target(temp=temp, humi=humi, chamber_id=chamber_id)
+        elif action == "set_speed":
+            self.set_speed(float(cmd.get("value", 1.0)), chamber_id=chamber_id)
+        elif action == "book_slot":
+            self.add_booking(
+                chamber_id=chamber_id,
+                project=cmd.get("project", "Reliability Test"),
+                engineer=cmd.get("engineer", "Engineer"),
+                start_time=cmd.get("start_time", "Immediate"),
+                duration=cmd.get("duration", "4h"),
+            )
+        elif action == "update_test":
+            self.set_test_profile(
+                chamber_id=chamber_id,
+                name=cmd.get("name", "Custom Test"),
+                operator=cmd.get("operator", "Staff"),
+                total_hours=float(cmd.get("total_hours", 8.0)),
+            )
+        else:
+            return {"status": "error", "message": f"Unknown action: {action}"}
+
+        return {
+            "status": "ok",
+            "chamber_id": chamber_id,
+            "action": action,
+            "telemetry": self.get_telemetry(chamber_id).to_api_dict(),
+        }
+
     def get_telemetry(self, chamber_id: str = "chamber-1") -> ChamberTelemetry:
         return self.get_chamber(chamber_id).get_telemetry()
 
     def get_all_telemetry(self) -> Dict[str, ChamberTelemetry]:
         return {cid: ch.get_telemetry() for cid, ch in self.chambers.items()}
+
+    def get_all_telemetry_dict(self) -> Dict[str, Dict[str, Any]]:
+        return {cid: ch.get_telemetry().to_api_dict() for cid, ch in self.chambers.items()}

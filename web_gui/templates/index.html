@@ -526,7 +526,11 @@
       </div>
     </div>
     <div class="header-right">
-      <span id="connBadge" class="conn-badge">● WebSocket Connected</span>
+      <span id="apiBadge" class="conn-badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; cursor: pointer;" onclick="openApiModal()" title="Click to inspect & test Instrument API <-> Web UI API">
+        🔌 Instrument API: <span id="apiPacketCount">0</span> pkts
+      </span>
+      <button onclick="openApiModal()" style="padding: 5px 10px; font-size: 12px;">📡 API 接口測試</button>
+      <span id="connBadge" class="conn-badge">● API / WS Connected</span>
       <span id="clock" style="color: var(--text-sub); font-family: monospace;">--:--:--</span>
     </div>
   </div>
@@ -728,6 +732,57 @@
     </div>
   </div>
 
+  <!-- Instrument API <-> Web UI API Inspector & Simulator Modal -->
+  <div id="apiModal" class="modal-overlay">
+    <div class="modal-content" style="width: 680px;">
+      <div class="modal-header">
+        <h3>📡 儀器 API ↔ Web UI API 接口中心 (API Architecture Bridge)</h3>
+        <button onclick="closeApiModal()" style="padding: 2px 8px;">✕</button>
+      </div>
+      <div style="font-size: 13px; color: var(--text-sub); margin-bottom: 12px; line-height: 1.5;">
+        <div><strong>1. 儀器端傳送 API 接口 (Instrument Push):</strong> <code style="color:#60a5fa;">POST /api/chambers/{chamber_id}/telemetry</code> 或 <code style="color:#60a5fa;">POST /api/telemetry</code></div>
+        <div><strong>2. Web UI 讀取顯示接口 (Web UI Show Data):</strong> <code style="color:#4ade80;">GET /api/telemetry</code> &amp; <code style="color:#4ade80;">GET /api/chambers/{chamber_id}/telemetry</code></div>
+        <div><strong>3. Web UI 控制指令接口 (Control Command):</strong> <code style="color:#fbbf24;">POST /api/chambers/{chamber_id}/command</code></div>
+        <div style="margin-top: 4px;">當前資料來源 (Source): <strong id="apiSourceLabel" style="color: var(--text-main);">instrument-api-client</strong> ｜ 最後接收: <strong id="apiLastTimeLabel" style="color: var(--text-main);">--:--:--</strong></div>
+      </div>
+
+      <div style="background: #121620; border: 1px solid #273347; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+        <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 8px;">🚀 模擬外部儀器 API 傳送數據至 Web UI (POST /api/chambers/<span id="apiTargetChamberLbl">chamber-1</span>/telemetry)</div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px;">
+          <div>
+            <label style="font-size:11px; color:var(--text-sub);">實測溫度 PV (°C)</label>
+            <input type="number" id="apiPushTempPV" value="88.5" step="0.5" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:11px; color:var(--text-sub);">目標溫度 SV (°C)</label>
+            <input type="number" id="apiPushTempSV" value="90.0" step="0.5" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:11px; color:var(--text-sub);">實測濕度 PV (%)</label>
+            <input type="number" id="apiPushHumiPV" value="82.0" step="1" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:11px; color:var(--text-sub);">目標濕度 SV (%)</label>
+            <input type="number" id="apiPushHumiSV" value="85.0" step="1" style="width:100%;">
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button onclick="fetchTelemetryFromAPI(true)">🔄 從 GET /api/telemetry 讀取最新 JSON</button>
+          <button class="btn-primary" onclick="simulateInstrumentApiPush()">📤 立即以儀器 API POST 傳送至 Web UI</button>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 6px;">
+        <label>Web UI API 即時資料回應預覽 (<code style="color:#4ade80;">GET /api/chambers/{id}/telemetry</code>):</label>
+        <pre id="apiJsonPreview" style="background:#0b0e14; color:#a5f3fc; border:1px solid #273347; border-radius:6px; padding:10px; font-size:11px; max-height:180px; overflow:auto; font-family:Consolas,monospace;">Loading API data...</pre>
+      </div>
+      <div class="modal-footer">
+        <a href="/docs" target="_blank" style="text-decoration:none;"><button type="button">📖 開啟 Swagger API 文件 (/docs)</button></a>
+        <button onclick="closeApiModal()">關閉 (Close)</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Booking Modal Dialog -->
   <div id="bookingModal" class="modal-overlay">
     <div class="modal-content">
@@ -896,72 +951,122 @@
     }
 
     let ws;
+    let wsConnected = false;
+
+    function ingestMultiTelemetryMessage(msg) {
+      if (!msg || !msg.chambers) return;
+
+      if (msg.api_status) {
+        const pktEl = document.getElementById('apiPacketCount');
+        if (pktEl) pktEl.textContent = msg.api_status.total_packets || 0;
+        const srcEl = document.getElementById('apiSourceLabel');
+        if (srcEl) srcEl.textContent = msg.api_status.source_id || 'instrument-api';
+        const timeEl = document.getElementById('apiLastTimeLabel');
+        if (timeEl) timeEl.textContent = msg.api_status.last_received_time || '--:--:--';
+      }
+
+      for (const [cid, d] of Object.entries(msg.chambers)) {
+        latestData[cid] = d;
+
+        // Update mini tabs
+        const dot = document.getElementById(`dot-${cid}`);
+        if (dot) dot.style.backgroundColor = d.state_color;
+        const stMini = document.getElementById(`mini-st-${cid}`);
+        if (stMini) stMini.textContent = d.state_text;
+        const tpMini = document.getElementById(`mini-tp-${cid}`);
+        if (tpMini) tpMini.textContent = d.temp_pv.toFixed(1);
+        const hpMini = document.getElementById(`mini-hp-${cid}`);
+        if (hpMini) hpMini.textContent = d.humi_pv.toFixed(1);
+
+        // Update mini test info & remaining time
+        const tMini = document.getElementById(`mini-test-${cid}`);
+        if (tMini) tMini.textContent = d.test_name;
+        const rMini = document.getElementById(`mini-rem-${cid}`);
+        if (rMini) rMini.textContent = d.test_remaining_str;
+
+        // Append telemetry to historical buffer
+        if (!multiHistory[cid]) {
+          multiHistory[cid] = { times: [], tempPV: [], tempSV: [], humiPV: [], humiSV: [], states: [] };
+        }
+        const h = multiHistory[cid];
+        h.times.push(d.time);
+        h.tempPV.push(d.temp_pv);
+        h.tempSV.push(d.temp_sv);
+        h.humiPV.push(d.humi_pv);
+        h.humiSV.push(d.humi_sv);
+        h.states.push(d.state);
+
+        if (h.times.length > MAX_PTS) {
+          h.times.shift();
+          h.tempPV.shift();
+          h.tempSV.shift();
+          h.humiPV.shift();
+          h.humiSV.shift();
+          h.states.shift();
+        }
+      }
+
+      const cur = msg.chambers[currentChamberId];
+      if (cur) {
+        updateActiveUI(cur);
+        refreshChart();
+      }
+    }
+
+    // 1. 透過 Web UI REST API (GET /api/telemetry) 讀取並顯示數據 (Show Data)
+    async function fetchTelemetryFromAPI(updatePreview = false) {
+      try {
+        const res = await fetch('/api/telemetry');
+        if (!res.ok) return;
+        const data = await res.json();
+        ingestMultiTelemetryMessage(data);
+        if (updatePreview) {
+          const curData = data.chambers[currentChamberId] || data;
+          document.getElementById('apiJsonPreview').textContent = JSON.stringify(
+            { api_status: data.api_status, chamber_id: currentChamberId, telemetry: curData },
+            null,
+            2
+          );
+        }
+      } catch (err) {
+        console.error('Failed to fetch from /api/telemetry:', err);
+      }
+    }
+
+    // 2. WebSocket 即時推播連線 (配合 REST API 雙軌同步)
     function connectWS() {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
 
       ws.onopen = () => {
+        wsConnected = true;
         const badge = document.getElementById('connBadge');
-        badge.textContent = '● WebSocket Connected';
+        badge.textContent = '● API / WS Connected';
         badge.classList.remove('offline');
       };
 
       ws.onmessage = (event) => {
         const msg = JSON.parse(event.data);
-        if (msg.type !== 'telemetry_multi') return;
-
-        for (const [cid, d] of Object.entries(msg.chambers)) {
-          latestData[cid] = d;
-
-          // Update mini tabs
-          const dot = document.getElementById(`dot-${cid}`);
-          if (dot) dot.style.backgroundColor = d.state_color;
-          const stMini = document.getElementById(`mini-st-${cid}`);
-          if (stMini) stMini.textContent = d.state_text;
-          const tpMini = document.getElementById(`mini-tp-${cid}`);
-          if (tpMini) tpMini.textContent = d.temp_pv.toFixed(1);
-          const hpMini = document.getElementById(`mini-hp-${cid}`);
-          if (hpMini) hpMini.textContent = d.humi_pv.toFixed(1);
-
-          // Update mini test info & remaining time
-          const tMini = document.getElementById(`mini-test-${cid}`);
-          if (tMini) tMini.textContent = d.test_name;
-          const rMini = document.getElementById(`mini-rem-${cid}`);
-          if (rMini) rMini.textContent = d.test_remaining_str;
-
-          // Append telemetry to historical buffer
-          const h = multiHistory[cid];
-          h.times.push(d.time);
-          h.tempPV.push(d.temp_pv);
-          h.tempSV.push(d.temp_sv);
-          h.humiPV.push(d.humi_pv);
-          h.humiSV.push(d.humi_sv);
-          h.states.push(d.state);
-
-          if (h.times.length > MAX_PTS) {
-            h.times.shift();
-            h.tempPV.shift();
-            h.tempSV.shift();
-            h.humiPV.shift();
-            h.humiSV.shift();
-            h.states.shift();
-          }
-        }
-
-        const cur = msg.chambers[currentChamberId];
-        if (cur) {
-          updateActiveUI(cur);
-          refreshChart();
+        if (msg.type === 'telemetry_multi') {
+          ingestMultiTelemetryMessage(msg);
         }
       };
 
       ws.onclose = () => {
+        wsConnected = false;
         const badge = document.getElementById('connBadge');
-        badge.textContent = '❌ Offline, Reconnecting...';
+        badge.textContent = '● REST API Polling Mode';
         badge.classList.add('offline');
         setTimeout(connectWS, 2000);
       };
     }
+
+    // 若 WebSocket 中斷時，自動透過 REST API 輪詢保持畫面更新
+    setInterval(() => {
+      if (!wsConnected) {
+        fetchTelemetryFromAPI(false);
+      }
+    }, 500);
 
     function updateActiveUI(d) {
       document.getElementById('clock').textContent = d.time;
@@ -1046,34 +1151,103 @@
       tbody.innerHTML = html;
     }
 
+    // 啟動時先透過 REST API 載入初始資料，並建立 WebSocket 即時連線
+    fetchTelemetryFromAPI(false);
     connectWS();
+
+    // 透過 Web UI REST API 發送控制指令至後端與儀器 API
+    async function sendCommandViaAPI(payload) {
+      try {
+        const res = await fetch(`/api/chambers/${currentChamberId}/command`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.telemetry) {
+            latestData[currentChamberId] = data.telemetry;
+            updateActiveUI(data.telemetry);
+          }
+        }
+      } catch (err) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ ...payload, chamber_id: currentChamberId }));
+        }
+      }
+    }
 
     function togglePower() {
       const cur = latestData[currentChamberId];
       const isPowerOn = cur && (cur.state !== 0);
-      ws.send(JSON.stringify({ action: 'power_toggle', chamber_id: currentChamberId, value: !isPowerOn }));
+      sendCommandViaAPI({ action: 'power_toggle', value: !isPowerOn });
     }
 
     function toggleRun() {
-      ws.send(JSON.stringify({ action: 'run_toggle', chamber_id: currentChamberId }));
+      sendCommandViaAPI({ action: 'run_toggle' });
     }
 
     function toggleDoor() {
-      ws.send(JSON.stringify({ action: 'door_toggle', chamber_id: currentChamberId }));
+      sendCommandViaAPI({ action: 'door_toggle' });
     }
 
     function toggleAlarm() {
-      ws.send(JSON.stringify({ action: 'alarm_toggle', chamber_id: currentChamberId }));
+      sendCommandViaAPI({ action: 'alarm_toggle' });
     }
 
     function sendSV() {
       const t = parseFloat(document.getElementById('inTemp').value);
       const h = parseFloat(document.getElementById('inHumi').value);
-      ws.send(JSON.stringify({ action: 'set_sv', chamber_id: currentChamberId, temp: t, humi: h }));
+      sendCommandViaAPI({ action: 'set_sv', temp: t, humi: h });
     }
 
     function sendSpeed(spd) {
-      ws.send(JSON.stringify({ action: 'set_speed', chamber_id: currentChamberId, value: parseFloat(spd) }));
+      sendCommandViaAPI({ action: 'set_speed', value: parseFloat(spd) });
+    }
+
+    // API Bridge Modal logic
+    function openApiModal() {
+      document.getElementById('apiTargetChamberLbl').textContent = currentChamberId;
+      const cur = latestData[currentChamberId];
+      if (cur) {
+        document.getElementById('apiPushTempPV').value = cur.temp_pv;
+        document.getElementById('apiPushTempSV').value = cur.temp_sv;
+        document.getElementById('apiPushHumiPV').value = cur.humi_pv;
+        document.getElementById('apiPushHumiSV').value = cur.humi_sv;
+      }
+      document.getElementById('apiModal').classList.add('show');
+      fetchTelemetryFromAPI(true);
+    }
+
+    function closeApiModal() {
+      document.getElementById('apiModal').classList.remove('show');
+    }
+
+    async function simulateInstrumentApiPush() {
+      const tempPV = parseFloat(document.getElementById('apiPushTempPV').value);
+      const tempSV = parseFloat(document.getElementById('apiPushTempSV').value);
+      const humiPV = parseFloat(document.getElementById('apiPushHumiPV').value);
+      const humiSV = parseFloat(document.getElementById('apiPushHumiSV').value);
+
+      const payload = {
+        source_id: `external-instrument-${currentChamberId}`,
+        telemetry: {
+          temp_pv: tempPV,
+          temp_sv: tempSV,
+          humi_pv: humiPV,
+          humi_sv: humiSV,
+          state: 2
+        }
+      };
+
+      const res = await fetch(`/api/chambers/${currentChamberId}/telemetry`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const respData = await res.json();
+      document.getElementById('apiJsonPreview').textContent = JSON.stringify(respData, null, 2);
+      await fetchTelemetryFromAPI(false);
     }
 
     // Modal Booking logic
@@ -1091,14 +1265,13 @@
       const startTime = document.getElementById('bookStartTime').value.trim() || 'Tomorrow 09:00';
       const duration = document.getElementById('bookDuration').value;
 
-      ws.send(JSON.stringify({
+      sendCommandViaAPI({
         action: 'book_slot',
-        chamber_id: currentChamberId,
         project: project,
         engineer: engineer,
         start_time: startTime,
         duration: duration
-      }));
+      });
 
       closeBookingModal();
       document.getElementById('bookProject').value = '';

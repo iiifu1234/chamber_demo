@@ -54,6 +54,37 @@ class ChamberTelemetry:
     next_available_slot: str = "Available Now"
     bookings: List[Dict[str, Any]] = field(default_factory=list)
 
+    def to_api_dict(self) -> Dict[str, Any]:
+        """Serialize telemetry to standard API JSON dictionary"""
+        return {
+            "time": self.timestamp,
+            "temp_pv": self.temp_pv,
+            "temp_sv": self.temp_sv,
+            "humi_pv": self.humi_pv,
+            "humi_sv": self.humi_sv,
+            "state": int(self.state),
+            "state_text": self.state_text,
+            "state_color": self.state_color,
+            "heater": self.heater,
+            "cooler": self.cooler,
+            "humidifier": self.humidifier,
+            "dehumidifier": self.dehumidifier,
+            "door_open": self.door_open,
+            "uptime_sec": self.uptime_sec,
+            "uptime": self.uptime_str,
+            "sim_speed": self.sim_speed,
+            "test_name": self.test_name,
+            "test_operator": self.test_operator,
+            "test_total_sec": self.test_total_sec,
+            "test_remaining_sec": self.test_remaining_sec,
+            "test_remaining_str": self.test_remaining_str,
+            "test_progress_pct": self.test_progress_pct,
+            "est_completion_time": self.est_completion_time,
+            "next_available_slot": self.next_available_slot,
+            "bookings": self.bookings,
+        }
+
+
 
 class BaseChamber(ABC):
     """Abstract Test Chamber Device Interface"""
