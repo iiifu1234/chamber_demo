@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Chamber Web Server Entry Point
 Compatible with both Local development (port 8000) and Cloud platforms like Render/Railway (PORT env).
